@@ -274,6 +274,7 @@ fe_node* fe_load_node(fe_state& s)
             node = &nf->base;
 
             s.data++;
+            s.size--; //  Igor: fix reading unallocated memory
             fe_grad* grad = &nf->grad;
 
             //read colors
@@ -321,6 +322,7 @@ fe_node* fe_load_node(fe_state& s)
             node = &nf->base;
 
             s.data++;
+            s.size--; //  Igor: fix reading unallocated memory
             fe_grad* grad = &nf->grad;
 
             //read colors
@@ -530,6 +532,7 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
     while (*s.data == '*')
     {
         s.data++;
+        s.size--; //  Igor: fix reading unallocated memory
         read_token(s);
         CHECK_ERR();
 
@@ -578,7 +581,7 @@ fe_bundle*  fe_bundle_load(const void* data_, int size)
     fe_state s;
     s.token = 0;
     s.data = copy;
-    s.size = size + 1;
+    s.size = size; // Igor+Andrey: guarantee that when fe_load_effect reeds past last byte there is always 0. Tokeniser works wine with this.
     s.error = false;
 
     //next_line(s);
