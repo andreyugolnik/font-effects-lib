@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{62c93598-cc67-46d6-8b31-608809c18dc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{027f8312-08fd-4b02-890a-a722912ddcb9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\fe\fe.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_bundle.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_effect.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_export.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_gradient.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_image.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fe\fe_node.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fe-include.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fe_node_effects.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fe_parser.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ImageData.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ImageDataOperations.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pixel.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\fe_bundle.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_effect.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_gradient.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_image.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_node.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_node_custom.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fe_node_effects.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImageData.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImageDataOperations.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
