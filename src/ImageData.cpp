@@ -1,8 +1,18 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #include "ImageData.h"
 
 namespace fe
 {
-    ImageData::ImageData()//: w(0), h(0), bytespp(0), pitch(0), data(0), format(TF_UNDEFINED)
+    ImageData::ImageData() //: w(0), h(0), bytespp(0), pitch(0), data(0), format(TF_UNDEFINED)
     {
         w = 0;
         h = 0;
@@ -18,7 +28,7 @@ namespace fe
         *((fe_image*)this) = b;
     }
 
-    ImageData::ImageData(int W, int H, int Pitch, FE_IMAGE_FORMAT Format, void* Data)//: w(W), h(H), pitch(Pitch), format(Format), data((unsigned char*)Data)
+    ImageData::ImageData(int W, int H, int Pitch, FE_IMAGE_FORMAT Format, void* Data) //: w(W), h(H), pitch(Pitch), format(Format), data((uint8_t*)Data)
     {
         w = W;
         h = H;
@@ -39,7 +49,6 @@ namespace fe
     {
     }
 
-
     ImageData ImageData::getRect(int X, int Y, int W, int H) const
     {
         FE_ASSERT(X >= 0 && X <= w);
@@ -47,7 +56,7 @@ namespace fe
         FE_ASSERT(X + W <= w);
         FE_ASSERT(Y + H <= h);
 
-        void* ptr = (unsigned char*)data + X * bytespp + Y * pitch;
+        void* ptr = (uint8_t*)data + X * bytespp + Y * pitch;
         ImageData buffer(W, H, pitch, format, ptr);
 
         return buffer;
@@ -58,8 +67,9 @@ namespace fe
         return getRect(x, y, w - x, h - y);
     }
 
-    unsigned char* ImageData::getPixelPtr(int x, int y) const
+    uint8_t* ImageData::getPixelPtr(int x, int y) const
     {
-        return (unsigned char*)data + x * bytespp + y * pitch;
+        return (uint8_t*)data + x * bytespp + y * pitch;
     }
-}
+
+} // namespace fe

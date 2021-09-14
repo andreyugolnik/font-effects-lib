@@ -1,15 +1,24 @@
-#ifndef FONT_IMAGE_H
-#define FONT_IMAGE_H
-#include <stdint.h>
-#include <stdbool.h>
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
+#pragma once
+
 #include "fe_export.h"
-#include "fe_gradient.h"
+#include <cstdint>
 
+struct fe_color;
+struct fe_image;
 
-typedef void(*free_image_fn)(struct fe_image*);
+typedef void (*free_image_fn)(fe_image*);
 
-
-class PixDist//todo, move
+class PixDist // TODO move
 {
 public:
     float d1;
@@ -29,8 +38,7 @@ enum FE_IMAGE_FORMAT
     FE_IMG_MAX = 0xffffffff
 };
 
-
-typedef struct fe_image
+struct fe_image
 {
     int w;
     int h;
@@ -40,40 +48,37 @@ typedef struct fe_image
     FE_IMAGE_FORMAT format;
 
     free_image_fn free;
-} fe_image;
-
-
-FONT_EFFECT_EXPORT
-fe_image  fe_image_get_rect(const fe_image* im, int x, int y, int w, int h);
+};
 
 FONT_EFFECT_EXPORT
-void  fe_image_get_rect2(fe_image*, const fe_image* im, int x, int y, int w, int h);
+fe_image fe_image_get_rect(const fe_image* im, int x, int y, int w, int h);
 
 FONT_EFFECT_EXPORT
-void   fe_image_create(fe_image*, int w, int h, FE_IMAGE_FORMAT);
+void fe_image_get_rect2(fe_image*, const fe_image* im, int x, int y, int w, int h);
 
 FONT_EFFECT_EXPORT
-void   fe_image_premultiply(fe_image*);
+void fe_image_create(fe_image*, int w, int h, FE_IMAGE_FORMAT);
 
 FONT_EFFECT_EXPORT
-void    fe_image_copy_alloc(const fe_image* src, fe_image* dest);
+void fe_image_premultiply(fe_image*);
 
 FONT_EFFECT_EXPORT
-void  fe_image_free(fe_image* dest);
+void fe_image_copy_alloc(const fe_image* src, fe_image* dest);
 
 FONT_EFFECT_EXPORT
-void   fe_image_copy(const fe_image* src, fe_image* dest);
+void fe_image_free(fe_image* dest);
 
 FONT_EFFECT_EXPORT
-void  fe_image_fill(fe_image* dest, const fe_color* color);
+void fe_image_copy(const fe_image* src, fe_image* dest);
 
 FONT_EFFECT_EXPORT
-void  fe_image_blit(const fe_image* src,  fe_image* dest);
+void fe_image_fill(fe_image* dest, const fe_color* color);
 
 FONT_EFFECT_EXPORT
-void  fe_image_unpremultiply(fe_image* src);
+void fe_image_blit(const fe_image* src, fe_image* dest);
+
+FONT_EFFECT_EXPORT
+void fe_image_unpremultiply(fe_image* src);
 
 FONT_EFFECT_EXPORT
 int getBytesPerPixel(FE_IMAGE_FORMAT);
-
-#endif //FONT_IMAGE_H

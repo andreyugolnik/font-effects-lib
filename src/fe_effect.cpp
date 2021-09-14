@@ -1,6 +1,16 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #include "fe/fe_effect.h"
 #include "fe/fe_node.h"
-#include <stdlib.h>
+#include <cstdlib>
 
 void _fe_free(void *ptr);
 

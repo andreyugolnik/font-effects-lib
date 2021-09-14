@@ -1,3 +1,13 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #pragma once
 
 fe_im fe_node_image_fixed_get_image(const fe_node_image_fixed* node, const fe_args* args);

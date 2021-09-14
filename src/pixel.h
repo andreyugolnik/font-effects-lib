@@ -1,11 +1,22 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #pragma once
+
 #include "fe-include.h"
 
 namespace fe
 {
-    const unsigned char lookupTable4to8[] = {0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255};
-    const unsigned char lookupTable5to8[] = {0, 8, 16, 24, 32, 41, 49, 57, 65, 74, 82, 90, 98, 106, 115, 123, 131, 139, 148, 156, 164, 172, 180, 189, 197, 205, 213, 222, 230, 238, 246, 255};
-    const unsigned char lookupTable6to8[] = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 129, 133, 137, 141, 145, 149, 153, 157, 161, 165, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 214, 218, 222, 226, 230, 234, 238, 242, 246, 250, 255};
+    const uint8_t lookupTable4to8[] = { 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255 };
+    const uint8_t lookupTable5to8[] = { 0, 8, 16, 24, 32, 41, 49, 57, 65, 74, 82, 90, 98, 106, 115, 123, 131, 139, 148, 156, 164, 172, 180, 189, 197, 205, 213, 222, 230, 238, 246, 255 };
+    const uint8_t lookupTable6to8[] = { 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 129, 133, 137, 141, 145, 149, 153, 157, 161, 165, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 214, 218, 222, 226, 230, 234, 238, 242, 246, 250, 255 };
 
     struct Pixel
     {
@@ -13,26 +24,26 @@ namespace fe
         {
             struct
             {
-                unsigned char bytes[4];
+                uint8_t bytes[4];
             };
 
             struct
             {
-                unsigned char r, g, b, a;
+                uint8_t r, g, b, a;
             };
 
-            unsigned int rgba;
+            uint32_t rgba;
         };
     };
 
-    inline Pixel initPixel(unsigned int rgba)
+    inline Pixel initPixel(uint32_t rgba)
     {
         Pixel p;
         p.rgba = rgba;
         return p;
     }
 
-    inline Pixel initPixel(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+    inline Pixel initPixel(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     {
         Pixel p;
         p.r = r;
@@ -42,15 +53,16 @@ namespace fe
         return p;
     }
 
-#define GET_PIXEL_ARGS const unsigned char* data, Pixel& p, int x, int y
-#define GET_PIXEL_ARGS_PASS   data,  p,  x,  y
-#define OPERATOR_ARGS int x, int y
-#define OPERATOR_ARGS_PASS x, y
-
-    class PixelA8
+    class PixelBase
     {
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        virtual void getPixel(const uint8_t* data, Pixel& p, int x, int y) const = 0;
+    };
+
+    class PixelA8 : public PixelBase
+    {
+    public:
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
             p.a = data[0];
             p.r = p.a;
@@ -59,36 +71,36 @@ namespace fe
             //p.a = data[0];
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
             *data = p.a;
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
-            *((unsigned char*)dst) = *((unsigned char*)src);
+            *((uint8_t*)dst) = *((uint8_t*)src);
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return alpha;
         }
     };
 
-    class PixelDISTANCE
+    class PixelDISTANCE : public PixelBase
     {
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
-            float d1 = *(float*)data;
-            float d2 = *((float*)data + 1);
-            int t = int((d1 - d2) * 10);
-            int f = t;
+            auto d1 = *(float*)data;
+            auto d2 = *((float*)data + 1);
+            auto t = int((d1 - d2) * 10);
+            auto f = t;
             if (f < 0)
                 f = -f;
             if (f > 255)
                 f = 255;
-            int color = 255 - f;
+            auto color = 255 - f;
 
             if (d1 > 0)
             {
@@ -113,85 +125,85 @@ namespace fe
             p.a = 255;
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
             *data = p.a;
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
-            *((unsigned char*)dst) = *((unsigned char*)src);
+            *((uint8_t*)dst) = *((uint8_t*)src);
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return alpha;
         }
     };
 
-    class PixelL8
+    class PixelL8 : public PixelBase
     {
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
-            unsigned char color = *data;
+            uint8_t color = *data;
             p.r = color;
             p.g = color;
             p.b = color;
             p.a = 255;
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
             *data = (p.r + p.g + p.b) / 3;
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
             *dst = *src;
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return 255;
         }
     };
 
-
-    class PixelR5G6B5
+    class PixelR5G6B5 : public PixelBase
     {
         /*
         in memory: BBBBB_GGGGGG_RRRRR
         in dword:  RRRRR_GGGGGG_BBBBB
         */
+
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
-            unsigned short color = *((unsigned short*)data);
+            auto color = *((uint16_t*)data);
             p.r = lookupTable5to8[(color & 0xF800) >> 11];
             p.g = lookupTable6to8[(color & 0x7E0) >> 5];
             p.b = lookupTable5to8[(color & 0x1F)];
             p.a = 255;
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
-            unsigned short* pshort = (unsigned short*)data;
+            auto pshort = (uint16_t*)data;
             *pshort = ((p.r >> 3) << 11) | ((p.g >> 2) << 5) | (p.b >> 3);
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
-            *((unsigned short*)dst) = *((unsigned short*)src);
+            *((uint16_t*)dst) = *((uint16_t*)src);
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return 255;
         }
     };
 
-    class PixelR8G8B8A8
+    class PixelR8G8B8A8 : public PixelBase
     {
         /*
         in memory: R8 G8 B8 A8
@@ -199,7 +211,7 @@ namespace fe
         */
 
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
             p.r = data[0];
             p.g = data[1];
@@ -207,7 +219,7 @@ namespace fe
             p.a = data[3];
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
             data[0] = p.r;
             data[1] = p.g;
@@ -215,18 +227,18 @@ namespace fe
             data[3] = p.a;
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
-            *((unsigned int*)dst) = *((unsigned int*)src);
+            *((uint32_t*)dst) = *((uint32_t*)src);
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return alpha;
         }
     };
 
-    class PixelB8G8R8A8
+    class PixelB8G8R8A8 : public PixelBase
     {
         /*
         in memory: B8 G8 R8 A8
@@ -234,7 +246,7 @@ namespace fe
         */
 
     public:
-        void getPixel(GET_PIXEL_ARGS) const
+        void getPixel(const uint8_t* data, Pixel& p, int x, int y) const override
         {
             p.r = data[2];
             p.g = data[1];
@@ -242,7 +254,7 @@ namespace fe
             p.a = data[3];
         }
 
-        void setPixel(unsigned char* data, const Pixel& p) const
+        void setPixel(uint8_t* data, const Pixel& p) const
         {
             data[2] = p.r;
             data[1] = p.g;
@@ -250,14 +262,15 @@ namespace fe
             data[3] = p.a;
         }
 
-        void copy(const unsigned char* src, unsigned char* dst) const
+        void copy(const uint8_t* src, uint8_t* dst) const
         {
-            *((unsigned int*)dst) = *((unsigned int*)src);
+            *((uint32_t*)dst) = *((uint32_t*)src);
         }
 
-        unsigned char snap_a(unsigned char alpha) const
+        uint8_t snap_a(uint8_t alpha) const
         {
             return alpha;
         }
     };
-}
+
+} // namespace fe

@@ -1,5 +1,15 @@
-#ifndef FONT_EFFECT_PARSER_H
-#define FONT_EFFECT_PARSER_H
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
+#pragma once
+
 /*internal*/
 struct fe_state
 {
@@ -8,5 +18,3 @@ struct fe_state
     int size;
     bool error;
 };
-
-#endif

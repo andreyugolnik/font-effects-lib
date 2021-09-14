@@ -1,35 +1,38 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #include "fe/fe_node.h"
+
+#include "ImageDataOperations.h"
+#include "fe/fe_effect.h"
 #include "fe/fe_gradient.h"
 #include "fe/fe_image.h"
-#include "fe/fe_effect.h"
-#include "ImageDataOperations.h"
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <math.h>
-#include <float.h>
-#include <limits.h>
-#include <string.h>
 #include "fe_node_effects.h"
-#include "ImageDataOperations.h"
+#include <cassert>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 void* _fe_alloc(size_t size);
-void _fe_free(void *ptr);
+void _fe_free(void* ptr);
 
-
-using namespace fe;
-
-ImageData* asImage(fe_image* im);
-const ImageData* asImage(const fe_image* im);
-
-
-#define ABS(v) (v < 0 ? - v : v)
+fe::ImageData* asImage(fe_image* im);
+const fe::ImageData* asImage(const fe_image* im);
 
 #ifdef SAVE_NODES
 FONT_EFFECT_EXPORT
-bool  fe_image_save_tga(const fe_image* src, const char* fname);
+bool fe_image_save_tga(const fe_image* src, const char* fname);
 #endif
-
 
 void fe_im_empty(fe_im& empty)
 {
@@ -46,14 +49,13 @@ void fe_im_empty(fe_im& empty)
 
 fe_im get_image(const fe_node* node, const fe_args* args)
 {
-    fe_im_cache *cached = args->cache.images;
+    fe_im_cache* cached = args->cache.images;
     if (cached && cached[node->index].image.image.data)
     {
         fe_im res = cached[node->index].image;
         res.image.free = 0;
         return res;
     }
-    
 
     fe_im r = node->get_image(node, args);
 
@@ -114,9 +116,6 @@ void fe_node_init(fe_node* node, int tp, get_node_image f)
     node->id = id++;
 }
 
-
-
-
 fe_node_image* fe_node_image_alloc()
 {
     fe_node_image* node = (fe_node_image*)_fe_alloc(sizeof(fe_node_image));
@@ -142,7 +141,7 @@ fe_node_mix* fe_node_mix_alloc()
     return node;
 }
 
-fe_node_out*         fe_node_out_alloc()
+fe_node_out* fe_node_out_alloc()
 {
     fe_node_out* node = (fe_node_out*)_fe_alloc(sizeof(fe_node_out));
     fe_node_init(&node->base, fe_node_type_out, (get_node_image)fe_node_out_get_image);
@@ -160,7 +159,7 @@ fe_node_outline* fe_node_outline_alloc()
     return node;
 }
 
-fe_node_distance_field*  fe_node_distance_field_alloc()
+fe_node_distance_field* fe_node_distance_field_alloc()
 {
     fe_node_distance_field* node = (fe_node_distance_field*)_fe_alloc(sizeof(fe_node_distance_field));
     fe_node_init(&node->base, fe_node_type_distance_field, (get_node_image)fe_node_distance_field_get_image);
@@ -168,34 +167,33 @@ fe_node_distance_field*  fe_node_distance_field_alloc()
     return node;
 }
 
-fe_node*  fe_node_distance_field_auto_alloc()
+fe_node* fe_node_distance_field_auto_alloc()
 {
     fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
     fe_node_init(node, fe_node_type_distance_field_auto, (get_node_image)fe_node_distance_field_auto_get_image);
     return node;
 }
 
-fe_node*  fe_node_stroke_simple_alloc()
+fe_node* fe_node_stroke_simple_alloc()
 {
     fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
     fe_node_init(node, fe_node_type_stroke_simple, (get_node_image)fe_node_stroke_simple_get_image);
     return node;
 }
 
-fe_node*                 fe_node_subtract_alloc()
+fe_node* fe_node_subtract_alloc()
 {
     fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
     fe_node_init(node, fe_node_type_subtract, (get_node_image)fe_node_subtract_get_image);
     return node;
 }
 
-fe_node*                 fe_node_light_alloc()
+fe_node* fe_node_light_alloc()
 {
     fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
     fe_node_init(node, fe_node_type_light, (get_node_image)fe_node_light_get_image);
     return node;
 }
-
 
 fe_node_fill* fe_node_fill_alloc()
 {
@@ -209,7 +207,6 @@ fe_node_fill* fe_node_fill_alloc()
     node->grad.alpha_num = 1;
     node->grad.alpha[0] = 255;
     node->grad.alpha_pos[0] = 0;
-
 
     node->plane.a = 0;
     node->plane.b = 1;
@@ -231,7 +228,7 @@ fe_node_fill_radial* fe_node_fill_radial_alloc()
     node->grad.alpha_num = 1;
     node->grad.alpha[0] = 255;
     node->grad.alpha_pos[0] = 0;
-    
+
     return node;
 }
 
@@ -240,42 +237,40 @@ fe_node* fe_node_alloc(int node_type)
     fe_node_type nt = (fe_node_type)node_type;
     switch (nt)
     {
-        case fe_node_type_source_image:
-            return (fe_node*)fe_node_image_alloc();
-        case fe_node_type_source_text:
-        {
-            fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
-            fe_node_init(node, nt, (get_node_image)fe_node_image_get_image);
-            return node;
-        }
-        case fe_node_type_image_fixed:
-            return (fe_node*)fe_node_image_fixed_alloc();
-        case fe_node_type_fill:
-            return (fe_node*)fe_node_fill_alloc();
-        case fe_node_type_fill_radial:
-            return (fe_node*)fe_node_fill_radial_alloc();
-        case fe_node_type_outline:
-            return (fe_node*)fe_node_outline_alloc();
-        case fe_node_type_mix:
-            return (fe_node*)fe_node_mix_alloc();
-        case fe_node_type_distance_field:
-            return (fe_node*)fe_node_distance_field_alloc();
-        case fe_node_type_distance_field_auto:
-            return (fe_node*)fe_node_distance_field_auto_alloc();
-        case fe_node_type_out:
-            return (fe_node*)fe_node_out_alloc();
-        case fe_node_type_stroke_simple:
-            return fe_node_stroke_simple_alloc();
-        case fe_node_type_subtract:
-            return fe_node_subtract_alloc();
-        case fe_node_type_light:
-            return fe_node_light_alloc();
-        default:
-        {
-            fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
-            fe_node_init(node, nt, (get_node_image)fe_node_default_get_image);
-            return node;
-        }
+    case fe_node_type_source_image:
+        return (fe_node*)fe_node_image_alloc();
+    case fe_node_type_source_text: {
+        fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
+        fe_node_init(node, nt, (get_node_image)fe_node_image_get_image);
+        return node;
+    }
+    case fe_node_type_image_fixed:
+        return (fe_node*)fe_node_image_fixed_alloc();
+    case fe_node_type_fill:
+        return (fe_node*)fe_node_fill_alloc();
+    case fe_node_type_fill_radial:
+        return (fe_node*)fe_node_fill_radial_alloc();
+    case fe_node_type_outline:
+        return (fe_node*)fe_node_outline_alloc();
+    case fe_node_type_mix:
+        return (fe_node*)fe_node_mix_alloc();
+    case fe_node_type_distance_field:
+        return (fe_node*)fe_node_distance_field_alloc();
+    case fe_node_type_distance_field_auto:
+        return (fe_node*)fe_node_distance_field_auto_alloc();
+    case fe_node_type_out:
+        return (fe_node*)fe_node_out_alloc();
+    case fe_node_type_stroke_simple:
+        return fe_node_stroke_simple_alloc();
+    case fe_node_type_subtract:
+        return fe_node_subtract_alloc();
+    case fe_node_type_light:
+        return fe_node_light_alloc();
+    default: {
+        fe_node* node = (fe_node*)_fe_alloc(sizeof(fe_node));
+        fe_node_init(node, nt, (get_node_image)fe_node_default_get_image);
+        return node;
+    }
     }
     return 0;
 }
@@ -305,17 +300,16 @@ void update_df_rad(const fe_node* node, fe_args* args)
         const fe_node* in = node->in[0].node;
         if (in)
         {
-            float &rad = args->cache.images[in->index].df_rad;
+            float& rad = args->cache.images[in->index].df_rad;
             rad = std::max(rad, node->properties_float[fe_const_param_float_fill_radial_rad_outer]);
         }
     }
-
 
     for (int i = 0; i < FE_MAX_PINS; ++i)
     {
         const fe_node* in = node->in[i].node;
         if (in)
-            update_df_rad(in, args);        
+            update_df_rad(in, args);
     }
 }
 
@@ -325,11 +319,11 @@ bool fe_node_apply_internal(int font_size, const fe_im* gl, const fe_node* node,
     args.size = font_size;
     args.base = *gl;
     args.base.y = font_size - args.base.y;
-    args.base.image.free = 0;//can't delete not owner
+    args.base.image.free = 0; //can't delete not owner
     args.scale = font_size / 100.0f;
 
     int size = sizeof(fe_im_cache) * num;
-    fe_im_cache *imc = (fe_im_cache*)alloca(size);
+    fe_im_cache* imc = (fe_im_cache*)alloca(size);
     args.cache.images = imc;
     args.cache.num = num;
 
@@ -352,7 +346,7 @@ bool fe_node_apply_internal(int font_size, const fe_im* gl, const fe_node* node,
     return true;
 }
 
-bool fe_node_apply2(int font_size, const fe_im* gl, const fe_node* node,  fe_im* res)
+bool fe_node_apply2(int font_size, const fe_im* gl, const fe_node* node, fe_im* res)
 {
     return fe_node_apply_internal(font_size, gl, node, res, node->effect->num);
 }
@@ -360,7 +354,7 @@ bool fe_node_apply2(int font_size, const fe_im* gl, const fe_node* node,  fe_im*
 bool fe_node_apply(
     int font_size,
     int x, int y,
-    int w, int h, FE_IMAGE_FORMAT format, int pitch, const void *data,
+    int w, int h, FE_IMAGE_FORMAT format, int pitch, const void* data,
     const fe_node* node, fe_im* res)
 {
     fe_im gl;
@@ -377,39 +371,34 @@ bool fe_node_apply(
     return fe_node_apply2(font_size, &gl, node, res);
 }
 
-
-
-
 void fe_convert_result(fe_im* src, fe_im* dest, FE_IMAGE_FORMAT dest_format, int convert_options)
 {
     if (dest_format == TF_UNDEFINED)
         dest_format = src->image.format;
 
-
     dest->x = src->x;
     dest->y = src->y;
 
-    ImageData *srcImage = asImage(&src->image);
-    ImageData *destImage = asImage(&dest->image);
+    auto srcImage = asImage(&src->image);
+    auto destImage = asImage(&dest->image);
 
     if (convert_options & fe_convert_option_downsample2x)
-    { 
+    {
         int nw = (src->image.w + 1) / 2;
         int nh = (src->image.h + 1) / 2;
         fe_image_create(&dest->image, nw, nh, dest_format);
 
-                
-        PixelR8G8B8A8 src_pf;
+        fe::PixelR8G8B8A8 src_pf;
 
         if (dest_format == FE_IMG_B8G8R8A8)
         {
-            PixelB8G8R8A8 dest_pf;
+            fe::PixelB8G8R8A8 dest_pf;
             fe::operations::downsample(src_pf, dest_pf, srcImage, destImage);
         }
 
         if (dest_format == FE_IMG_R8G8B8A8)
         {
-            PixelR8G8B8A8 dest_pf;
+            fe::PixelR8G8B8A8 dest_pf;
             fe::operations::downsample(src_pf, dest_pf, srcImage, destImage);
         }
 

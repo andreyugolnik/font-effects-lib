@@ -1,44 +1,37 @@
-#include "fe/fe_node.h"
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
+#include "ImageDataOperations.h"
+#include "fe/fe_effect.h"
 #include "fe/fe_gradient.h"
 #include "fe/fe_image.h"
-#include "fe/fe_effect.h"
+#include "fe/fe_node.h"
 #include "pixel.h"
-#include "ImageDataOperations.h"
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <math.h>
-#include <float.h>
-#include <limits.h>
-#include <string.h>
-
-
-using namespace fe;
+#include <cassert>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 void* _fe_alloc(size_t size);
-void _fe_free(void *ptr);
+void _fe_free(void* ptr);
 void fe_im_empty(fe_im& empty);
 
 int get_pins(const fe_node* node, const fe_args* args, fe_im* res, int Max);
 
 fe_im get_mixed_image(const fe_node* node, const fe_args* args);
-    
-ImageData* asImage(fe_image* im);
-const ImageData* asImage(const fe_image* im);
 
-
-
-#ifdef MAX
-#undef MAX
-#endif
-
-#ifdef MIN
-#undef MIN
-#endif
-
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
+fe::ImageData* asImage(fe_image* im);
+const fe::ImageData* asImage(const fe_image* im);
 
 template <class T>
 class PixelR8G8B8A8_GradApply : public T
@@ -48,21 +41,23 @@ public:
     float d;
     float s;
 
-    PixelR8G8B8A8_GradApply(const fe_apply_grad& Grad, float D, float S) : grad(Grad), d(D), s(S)
+    PixelR8G8B8A8_GradApply(const fe_apply_grad& Grad, float D, float S)
+        : grad(Grad)
+        , d(D)
+        , s(S)
     {
     }
 
     ~PixelR8G8B8A8_GradApply()
     {
-
     }
 
-    void getPixel(GET_PIXEL_ARGS) const
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
     {
-        T::getPixel(GET_PIXEL_ARGS_PASS);
+        T::getPixel(data, p, x, y);
 
-        PixelR8G8B8A8 gp;
-        Pixel g;
+        fe::PixelR8G8B8A8 gp;
+        fe::Pixel g;
 
         const fe_plane& plane = grad.plane;
         const fe_image& image = grad.image;
@@ -75,7 +70,7 @@ public:
         if (gx < 0)
             gx = 0;
 
-        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, OPERATOR_ARGS_PASS);
+        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, x, y);
 
         p.r = g.r;
         p.g = g.g;
@@ -85,32 +80,31 @@ public:
 
 private:
     PixelR8G8B8A8_GradApply(const PixelR8G8B8A8_GradApply&);
-    void operator = (const PixelR8G8B8A8_GradApply&);
+    void operator=(const PixelR8G8B8A8_GradApply&);
 };
 
-
-
-class PixelDist_GradApply
+class PixelDist_GradApply : public fe::PixelBase
 {
 public:
     fe_apply_grad grad;
     float s;
 
-    PixelDist_GradApply(const fe_apply_grad& Grad, float S) : grad(Grad), s(S)
+    PixelDist_GradApply(const fe_apply_grad& Grad, float S)
+        : grad(Grad)
+        , s(S)
     {
     }
 
     ~PixelDist_GradApply()
     {
-
     }
 
-    void getPixel(GET_PIXEL_ARGS) const
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
     {
-        //PixelDISTANCE::getPixel(GET_PIXEL_ARGS_PASS);
+        //PixelDISTANCE::getPixel(data, p, x, y);
 
-        PixelR8G8B8A8 gp;
-        Pixel g;
+        fe::PixelR8G8B8A8 gp;
+        fe::Pixel g;
 
         const fe_plane& plane = grad.plane;
         const fe_image& image = grad.image;
@@ -119,9 +113,8 @@ public:
 
         float d1 = pp->d1;
 
-
         float dist = d1;
-        dist = 60.0f * s + (dist) * 3.5f;
+        dist = 60.0f * s + (dist)*3.5f;
 
         int gx = int(dist * plane.scale);
         if (gx >= image.w)
@@ -129,7 +122,7 @@ public:
         if (gx < 0)
             gx = 0;
 
-        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, OPERATOR_ARGS_PASS);
+        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, x, y);
 
         p.r = g.r;
         p.g = g.g;
@@ -140,10 +133,8 @@ public:
 
 private:
     PixelDist_GradApply(const PixelDist_GradApply&);
-    void operator = (const PixelDist_GradApply&);
+    void operator=(const PixelDist_GradApply&);
 };
-
-
 
 int getAlphaRad(float dist, float _rad, float _sharp)
 {
@@ -151,7 +142,7 @@ int getAlphaRad(float dist, float _rad, float _sharp)
 
     //if (dist < _rad)
     {
-    //    z = 255;
+        //    z = 255;
     }
     //else
     {
@@ -183,7 +174,7 @@ int getAlphaRadOpt(float dist, float RadSharp, float sharp)
     return int(a * 255.0f);
 }
 
-class PixelDist_apply
+class PixelDist_apply : public fe::PixelBase
 {
 public:
     //fe_apply_grad grad;
@@ -192,7 +183,11 @@ public:
     float _sharp;
     bool inv;
 
-    PixelDist_apply(float rad, float sharp, float S) : _s(S), _rad(rad), _sharp(1.0f / sharp), inv(false)
+    PixelDist_apply(float rad, float sharp, float S)
+        : _s(S)
+        , _rad(rad)
+        , _sharp(1.0f / sharp)
+        , inv(false)
     {
         /*
         if (rad < 0)
@@ -206,13 +201,11 @@ public:
 
     ~PixelDist_apply()
     {
-
     }
 
-    void getPixel(GET_PIXEL_ARGS) const
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
     {
         const PixDist* pp = (PixDist*)data;
-
 
         int z = getAlphaRad(-pp->d1, _rad, _sharp);
 
@@ -225,18 +218,16 @@ public:
 
 private:
     PixelDist_apply(const PixelDist_apply&);
-    void operator = (const PixelDist_apply&);
+    void operator=(const PixelDist_apply&);
 };
 
-
-
-template<class T>
+template <class T>
 inline T lerp(T a, T b, float v)
 {
     return T(a + (b - a) * v);
 }
 
-static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, ImageData& dest, bool dist)
+static void buildSDF(const fe::ImageData& src, float rad, float sharp, bool outer, fe::ImageData& dest, bool dist)
 {
     const float DX = 1.0f;
     const float DY = 1.0f;
@@ -246,35 +237,34 @@ static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, I
     int w = src.w;
     int h = src.h;
 
-
     //int cmpWith = 0;
 
     int off = 0;
     if (src.bytespp == 4)
         off = 3;
 
-    /*
+        /*
     auto I = [ = ](int x, int y)
     {
     assert(x >= 0 && x < src.w);
     assert(y >= 0 && y < src.h);
-    unsigned char v = src.data[x * src.bytespp + y * src.pitch + off];
+    uint8_t v = src.data[x * src.bytespp + y * src.pitch + off];
     return v != 0;
     };
     */
-#define I(X, Y) (src.data[(X) * src.bytespp + (Y) * src.pitch + off] != 0)
+#define I(X, Y) (src.data[(X)*src.bytespp + (Y)*src.pitch + off] != 0)
 
-    /*
+        /*
     auto V = [ = ](int x, int y)
     {
     assert(x >= 0 && x < src.w);
     assert(y >= 0 && y < src.h);
-    unsigned char v = src.data[x * src.bytespp + y * src.pitch + off];
+    uint8_t v = src.data[x * src.bytespp + y * src.pitch + off];
     return v;
     };
     */
 
-#define V(X, Y) (src.data[(X) * src.bytespp + (Y) * src.pitch + off])
+#define V(X, Y) (src.data[(X)*src.bytespp + (Y)*src.pitch + off])
 
     PixDist* p = (PixDist*)(dest.data);
 
@@ -291,7 +281,7 @@ static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, I
 
     //auto sub = [ = ](int x, int y) {return x + y * w; };
 
-#define SUB(X, Y) ((X) + (Y) * w)
+#define SUB(X, Y) ((X) + (Y)*w)
 
     PixDist zero;
     zero.d1 = 1000.0f;
@@ -315,8 +305,7 @@ static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, I
         {
             bool t = I(x, y);
             if (t)
-                if (I(x - 1, y) != I(x, y) || I(x + 1, y) != I(x, y) ||
-                    I(x, y - 1) != I(x, y) || I(x, y + 1) != I(x, y))
+                if (I(x - 1, y) != I(x, y) || I(x + 1, y) != I(x, y) || I(x, y - 1) != I(x, y) || I(x, y + 1) != I(x, y))
                 {
                     const int i = SUB(x, y);
 
@@ -327,18 +316,13 @@ static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, I
 #define ALG 44
 
 #if ALG == 1
-                    int s =
-                        V(x - 1, y - 1) + V(x, y - 1) + V(x + 1, y - 1) +
-                        V(x - 1, y) + V(x, y) + V(x + 1, y) +
-                        V(x - 1, y + 1) + V(x, y + 1) + V(x + 1, y + 1);
+                    int s = V(x - 1, y - 1) + V(x, y - 1) + V(x + 1, y - 1) + V(x - 1, y) + V(x, y) + V(x + 1, y) + V(x - 1, y + 1) + V(x, y + 1) + V(x + 1, y + 1);
                     r = s / 9.0;
 #elif ALG == 2
-                    int s =
-                        V(x, y) + V(x - 1, y) + V(x, y - 1) + V(x + 1, y) + V(x, y + 1);
+                    int s = V(x, y) + V(x - 1, y) + V(x, y - 1) + V(x + 1, y) + V(x, y + 1);
                     r = s / 5.0;
 #elif ALG == 3
-                    int s =
-                        V(x, y) + V(x - 1, y - 1) + V(x - 1, y + 1) + V(x + 1, y + 1) + V(x + 1, y - 1);
+                    int s = V(x, y) + V(x - 1, y - 1) + V(x - 1, y + 1) + V(x + 1, y + 1) + V(x + 1, y - 1);
                     r = s / 5.0;
 #elif ALG == 4
 
@@ -354,18 +338,20 @@ static void buildSDF(const ImageData& src, float rad, float sharp, bool outer, I
 
     const float dxy = sqrtf(2.0);
 
-#define _check(X,Y,Delta)                             \
-i1=SUB((X),(Y));                              \
-if (p[i1].d1 + (Delta) < p[i2].d1) {          \
-    p[i2] = p[i1];                            \
-    float  q1 = p[i1].d2;                     \
-    float& q2 = p[i2].d2;                     \
-    if (q2 == 0 || q2 > q1) q2=q1;            \
-    q2=q1;                                    \
-    const float deltaX = float(p[i1].x - x);       \
-    const float deltaY = float(p[i1].y - y);       \
-    p[i2].d1 = sqrtf(deltaX*deltaX + deltaY*deltaY);  \
-}
+#define _check(X, Y, Delta)                                  \
+    i1 = SUB((X), (Y));                                      \
+    if (p[i1].d1 + (Delta) < p[i2].d1)                       \
+    {                                                        \
+        p[i2] = p[i1];                                       \
+        float q1 = p[i1].d2;                                 \
+        float& q2 = p[i2].d2;                                \
+        if (q2 == 0 || q2 > q1)                              \
+            q2 = q1;                                         \
+        q2 = q1;                                             \
+        const float deltaX = float(p[i1].x - x);             \
+        const float deltaY = float(p[i1].y - y);             \
+        p[i2].d1 = sqrtf(deltaX * deltaX + deltaY * deltaY); \
+    }
 
     //First pass
     for (y = 1; y < h - 1; y++)
@@ -374,7 +360,6 @@ if (p[i1].d1 + (Delta) < p[i2].d1) {          \
         {
             int i1;
             const int i2 = SUB(x, y);
-
 
             _check(x - 1, y, DX);
             _check(x - 1, y - 1, dxy);
@@ -414,7 +399,6 @@ if (p[i1].d1 + (Delta) < p[i2].d1) {          \
         }
     }
 
-
     for (int y = 0; y < h; y++)
     {
         for (int x = 0; x < w; x++)
@@ -431,16 +415,19 @@ if (p[i1].d1 + (Delta) < p[i2].d1) {          \
 }
 
 template <class T>
-class PremultPixel
+class PremultPixel : public fe::PixelBase
 {
 public:
     const T& _t;
-    PremultPixel(const T& t) : _t(t) {}
-
-    void getPixel(GET_PIXEL_ARGS) const
+    PremultPixel(const T& t)
+        : _t(t)
     {
-        _t.getPixel(GET_PIXEL_ARGS_PASS);
-        unsigned char a = p.a;
+    }
+
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
+    {
+        _t.getPixel(data, p, x, y);
+        uint8_t a = p.a;
         p.r = (p.r * a) / 255;
         p.g = (p.g * a) / 255;
         p.b = (p.b * a) / 255;
@@ -451,7 +438,6 @@ static void create_grad(fe_apply_grad* dest, const fe_grad* gr, int size)
 {
     fe_gradient_create(&dest->image, size, 1, gr->colors, gr->colors_pos, gr->colors_num, gr->alpha, gr->alpha_pos, gr->alpha_num);
 }
-
 
 fe_im fe_apply_stroke_loop(fe_im mixed, const fe_node* node, const fe_args* args)
 {
@@ -484,16 +470,14 @@ fe_im fe_apply_stroke_loop(fe_im mixed, const fe_node* node, const fe_args* args
     {
         for (int x = 0; x < w; ++x)
         {
-            unsigned char a = src.data[x * src.bytespp + y * src.pitch + off];
+            uint8_t a = src.data[x * src.bytespp + y * src.pitch + off];
             if (invert)
                 a = 255 - a;
 
             int v = a * 255;
 
-
-            int qx = x;// +1;
-            int qy = y;// +1;
-
+            int qx = x; // +1;
+            int qy = y; // +1;
 
             data[qy * nw + qx] += static_cast<int>(v * f);
             data[qy * nw + qx + 1] += static_cast<int>(v * z);
@@ -554,7 +538,7 @@ fe_im fe_apply_stroke_loop(fe_im mixed, const fe_node* node, const fe_args* args
             v /= 255;
             if (v > 255)
                 v = 255;
-            unsigned char& a = res.data[x + res.pitch * y];
+            uint8_t& a = res.data[x + res.pitch * y];
             a = v;
             //if (0)
             if (invert)
@@ -569,12 +553,11 @@ fe_im fe_apply_stroke_loop(fe_im mixed, const fe_node* node, const fe_args* args
                     tx = src.w - 1;
                 if (ty >= src.h)
                     ty = src.h - 1;
-                unsigned char t = src.data[tx * src.bytespp + ty * src.pitch + off];
+                uint8_t t = src.data[tx * src.bytespp + ty * src.pitch + off];
                 //if (t != 0)
                 //  t = 255;
                 a = (v * t) / 255;
             }
-
         }
     }
 
@@ -592,7 +575,7 @@ fe_im fe_node_stroke_simple_get_image(const fe_node* node, const fe_args* args)
 {
     fe_im mixed = get_mixed_image(node, args);
     int loops = (int)(node->properties_float[fe_const_param_float_stroke_width] * args->scale);
-    
+
     if (loops < 1)
         loops = 1;
 
@@ -607,8 +590,6 @@ fe_im fe_node_stroke_simple_get_image(const fe_node* node, const fe_args* args)
     return res;
 }
 
-
-
 fe_im fe_node_fill_get_image(const fe_node_fill* node, const fe_args* args)
 {
     fe_im src = get_mixed_image(&node->base, args);
@@ -619,29 +600,24 @@ fe_im fe_node_fill_get_image(const fe_node_fill* node, const fe_args* args)
 
     fe_image_create(&dest.image, src.image.w, src.image.h, FE_IMG_R8G8B8A8);
 
-
     fe_apply_grad ag;
-
 
     if (src.image.format == FE_IMG_DISTANCE)
     {
-
         create_grad(&ag, &node->grad, args->size);
         ag.plane = node->plane;
         ag.plane.d *= args->scale;
 
-
-        operations::op_blit op;
-        PixelR8G8B8A8 destPixel;
+        fe::operations::op_blit op;
+        fe::PixelR8G8B8A8 destPixel;
 
         PixelDist_GradApply srcPixelFill(ag, args->scale);
 
         //printf("dist apply\n");
-        operations::applyOperationT(op, PremultPixel<PixelDist_GradApply>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
+        fe::operations::applyOperationT(op, PremultPixel<PixelDist_GradApply>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
     }
     else
     {
-
         float sz = args->size / node->plane.scale;
         int gsize = static_cast<int>(sz * 2); //need more colors for good gradient
         float gscale = gsize / sz;
@@ -658,20 +634,17 @@ fe_im fe_node_fill_get_image(const fe_node_fill* node, const fe_args* args)
 
         float D = src.x * ag.plane.a + src.y * ag.plane.b;
 
-
-
-
-        operations::op_blit op;
-        PixelR8G8B8A8 destPixel;
+        fe::operations::op_blit op;
+        fe::PixelR8G8B8A8 destPixel;
         if (src.image.bytespp == 1)
         {
-            PixelR8G8B8A8_GradApply<PixelA8> srcPixelFill(ag, D, args->scale);
-            operations::applyOperationT(op, PremultPixel<PixelR8G8B8A8_GradApply<PixelA8> >(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
+            PixelR8G8B8A8_GradApply<fe::PixelA8> srcPixelFill(ag, D, args->scale);
+            fe::operations::applyOperationT(op, PremultPixel<PixelR8G8B8A8_GradApply<fe::PixelA8>>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
         }
         else
         {
-            PixelR8G8B8A8_GradApply<PixelR8G8B8A8> srcPixelFill(ag, D, args->scale);
-            operations::applyOperationT(op, PremultPixel<PixelR8G8B8A8_GradApply<PixelR8G8B8A8> >(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
+            PixelR8G8B8A8_GradApply<fe::PixelR8G8B8A8> srcPixelFill(ag, D, args->scale);
+            fe::operations::applyOperationT(op, PremultPixel<PixelR8G8B8A8_GradApply<fe::PixelR8G8B8A8>>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
         }
     }
 
@@ -681,9 +654,6 @@ fe_im fe_node_fill_get_image(const fe_node_fill* node, const fe_args* args)
     return dest;
 }
 
-
-
-
 fe_im get_mixed_image(const fe_node* node, const fe_args* args)
 {
     fe_im res[FE_MAX_PINS];
@@ -692,9 +662,8 @@ fe_im get_mixed_image(const fe_node* node, const fe_args* args)
     {
         fe_im empty;
         fe_im_empty(empty);
-        return  empty;
+        return empty;
     }
-
 
     if (num == 1)
     {
@@ -712,15 +681,14 @@ fe_im get_mixed_image(const fe_node* node, const fe_args* args)
     int l = INT_MAX;
     int t = INT_MAX;
 
-
     for (int i = 0; i < num; ++i)
     {
         fe_im& c = res[i];
-        r = MAX(r, c.image.w + c.x);
-        bt = MAX(bt, c.image.h + c.y);
+        r = std::max(r, c.image.w + c.x);
+        bt = std::max(bt, c.image.h + c.y);
 
-        l = MIN(l, c.x);
-        t = MIN(t, c.y);
+        l = std::min(l, c.x);
+        t = std::min(t, c.y);
     }
 
     fe_im dest;
@@ -732,19 +700,18 @@ fe_im get_mixed_image(const fe_node* node, const fe_args* args)
 
     fe_image_create(&dest.image, w, h, FE_IMG_R8G8B8A8);
 
-    ImageData destIm = *asImage(&dest.image);
-    operations::fill(destIm, Color(0, 0, 0, 0));
+    fe::ImageData destIm = *asImage(&dest.image);
+    fe::operations::fill(destIm, Color(0, 0, 0, 0));
 
-    operations::op_blend_one_invSrcAlpha op;
+    fe::operations::op_blend_one_invSrcAlpha op;
 
     for (int i = 0; i < num; ++i)
     {
         fe_im& c = res[i];
 
-        ImageData destRC = destIm.getRect(c.x - l, c.y - t, c.image.w, c.image.h);
-        operations::applyOperation(op, *asImage(&c.image), destRC);
+        fe::ImageData destRC = destIm.getRect(c.x - l, c.y - t, c.image.w, c.image.h);
+        fe::operations::applyOperation(op, *asImage(&c.image), destRC);
     }
-
 
     for (int i = 0; i < num; ++i)
     {
@@ -755,8 +722,7 @@ fe_im get_mixed_image(const fe_node* node, const fe_args* args)
     return dest;
 }
 
-
-class PixelDist_GradApply4Radial
+class PixelDist_GradApply4Radial : public fe::PixelBase
 {
 public:
     fe_apply_grad grad;
@@ -766,7 +732,10 @@ public:
     float radSharpInner;
     float radSharpOuter;
 
-    PixelDist_GradApply4Radial(const fe_apply_grad& Grad, float Outer, float Inner, float DistScale) : grad(Grad), radOuter(Outer), distScale(DistScale)
+    PixelDist_GradApply4Radial(const fe_apply_grad& Grad, float Outer, float Inner, float DistScale)
+        : grad(Grad)
+        , radOuter(Outer)
+        , distScale(DistScale)
     {
         float _sharp = 1.0f;
         radSharpInner = (1.0f + Inner / _sharp);
@@ -775,13 +744,12 @@ public:
 
     ~PixelDist_GradApply4Radial()
     {
-
     }
 
-    void getPixel(GET_PIXEL_ARGS) const
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
     {
-        PixelR8G8B8A8 gp;
-        Pixel g;
+        fe::PixelR8G8B8A8 gp;
+        fe::Pixel g;
 
         const fe_image& image = grad.image;
 
@@ -793,7 +761,7 @@ public:
         if (gx < 0)
             gx = 0;
 
-        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, OPERATOR_ARGS_PASS);
+        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, x, y);
         int a1 = getAlphaRadOpt(-pp->d1, radSharpOuter, 1.0f);
         int a2 = getAlphaRadOpt(pp->d1, radSharpInner, 1.0f);
 
@@ -801,14 +769,13 @@ public:
         p.g = g.g;
         p.b = g.b;
 
-        p.a = g.a * a1  * a2 / 255 / 255;
+        p.a = g.a * a1 * a2 / 255 / 255;
     }
 
 private:
     PixelDist_GradApply4Radial(const PixelDist_GradApply4Radial&);
-    void operator = (const PixelDist_GradApply4Radial&);
+    void operator=(const PixelDist_GradApply4Radial&);
 };
-
 
 fe_im fe_node_fill_radial_get_image(const fe_node_fill_radial* node, const fe_args* args)
 {
@@ -820,10 +787,9 @@ fe_im fe_node_fill_radial_get_image(const fe_node_fill_radial* node, const fe_ar
 
     fe_image_create(&dest.image, src.image.w, src.image.h, FE_IMG_R8G8B8A8);
 
-
     fe_apply_grad ag;
 
-    const float *props = node->base.properties_float;
+    const float* props = node->base.properties_float;
 
     float outer = props[fe_const_param_float_fill_radial_rad_outer] * args->scale;
     float inner = props[fe_const_param_float_fill_radial_rad_inner] * args->scale;
@@ -835,20 +801,17 @@ fe_im fe_node_fill_radial_get_image(const fe_node_fill_radial* node, const fe_ar
     sz = int(sz * distScale);
     create_grad(&ag, &node->grad, sz);
 
-    operations::op_blit op;
-    PixelR8G8B8A8 destPixel;
-
+    fe::operations::op_blit op;
+    fe::PixelR8G8B8A8 destPixel;
 
     PixelDist_GradApply4Radial srcPixelFill(ag, outer, inner, distScale);
-    operations::applyOperationT(op, PremultPixel<PixelDist_GradApply4Radial>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
-
+    fe::operations::applyOperationT(op, PremultPixel<PixelDist_GradApply4Radial>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
 
     fe_image_free(&src.image);
     fe_image_free(&ag.image);
     //fe_image_safe_tga(&dest.image, "d:/a.tga");
     return dest;
 }
-
 
 fe_im fe_node_image_get_image(const fe_node_image* node, const fe_args* args)
 {
@@ -864,7 +827,6 @@ fe_im fe_node_image_fixed_get_image(const fe_node_image_fixed* node, const fe_ar
     return im;
 }
 
-
 fe_im fe_node_out_get_image(const fe_node_image* node, const fe_args* args)
 {
     return get_mixed_image(&node->base, args);
@@ -875,21 +837,16 @@ fe_im fe_node_default_get_image(const fe_node_image* node, const fe_args* args)
     return get_mixed_image(&node->base, args);
 }
 
-
 fe_im fe_get_custom_image(const fe_node* node, const fe_args* args);
-
 
 fe_im fe_node_outline_get_image(const fe_node_outline* node, const fe_args* args)
 {
     fe_im src = get_mixed_image(&node->base, args);
 
-
-
     if (src.image.format != FE_IMG_DISTANCE)
     {
         return src;
     }
-
 
     fe_im dest;
     dest.x = src.x;
@@ -897,12 +854,11 @@ fe_im fe_node_outline_get_image(const fe_node_outline* node, const fe_args* args
 
     fe_image_create(&dest.image, src.image.w, src.image.h, FE_IMG_R8G8B8A8);
 
-
-    operations::op_blit op;
-    PixelR8G8B8A8 destPixel;
+    fe::operations::op_blit op;
+    fe::PixelR8G8B8A8 destPixel;
 
     PixelDist_apply srcPixelFill(node->base.properties_float[fe_const_param_float_outline_rad], node->base.properties_float[fe_const_param_float_outline_sharpness], args->scale);
-    operations::applyOperationT(op, PremultPixel<PixelDist_apply>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
+    fe::operations::applyOperationT(op, PremultPixel<PixelDist_apply>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
 
     fe_image_free(&src.image);
     //fe_image_safe_tga(&dest.image, "d:/a.tga");
@@ -922,12 +878,12 @@ fe_im fe_node_distance_field_get_image(const fe_node_distance_field* node, const
     int ew = int(rad) + 1;
     int eh = ew;
 
-    ImageData imSrc;
+    fe::ImageData imSrc;
     fe_image_create(&imSrc, src.image.w + ew * 2, src.image.h + eh * 2, FE_IMG_A8);
-    operations::fill(imSrc, Color(0, 0, 0, 0));
-    operations::blit(*asImage(&src.image), imSrc.getRect(ew, eh, src.image.w, src.image.h));
+    fe::operations::fill(imSrc, Color(0, 0, 0, 0));
+    fe::operations::blit(*asImage(&src.image), imSrc.getRect(ew, eh, src.image.w, src.image.h));
 
-    ImageData imDist;
+    fe::ImageData imDist;
     fe_image_create(&imDist, imSrc.w, imSrc.h, FE_IMG_DISTANCE);
     buildSDF(imSrc, rad, 0, outer, imDist, true);
 
@@ -946,7 +902,6 @@ fe_im fe_node_distance_field_auto_get_image(const fe_node_distance_field* node, 
 {
     fe_im src = get_mixed_image(&node->base, args);
 
-
     float rad = args->cache.images[node->base.index].df_rad * args->scale;
 
     bool outer = rad > 0;
@@ -956,12 +911,12 @@ fe_im fe_node_distance_field_auto_get_image(const fe_node_distance_field* node, 
     int ew = int(rad) + 1;
     int eh = ew;
 
-    ImageData imSrc;
+    fe::ImageData imSrc;
     fe_image_create(&imSrc, src.image.w + ew * 2, src.image.h + eh * 2, FE_IMG_A8);
-    operations::fill(imSrc, Color(0, 0, 0, 0));
-    operations::blit(*asImage(&src.image), imSrc.getRect(ew, eh, src.image.w, src.image.h));
+    fe::operations::fill(imSrc, Color(0, 0, 0, 0));
+    fe::operations::blit(*asImage(&src.image), imSrc.getRect(ew, eh, src.image.w, src.image.h));
 
-    ImageData imDist;
+    fe::ImageData imDist;
     fe_image_create(&imDist, imSrc.w, imSrc.h, FE_IMG_DISTANCE);
     buildSDF(imSrc, rad, 0, outer, imDist, true);
 
@@ -984,44 +939,41 @@ fe_im fe_node_subtract_get_image(const fe_node* node, const fe_args* args)
     {
         fe_im empty;
         fe_im_empty(empty);
-        return  empty;
+        return empty;
     }
 
     fe_im base = res[0];
 
     for (int i = 1; i < num; ++i)
     {
-        fe_im& c = res[i];
+        auto& c = res[i];
 
-        int r = MIN(base.image.w + base.x, c.image.w + c.x);
-        int b = MIN(base.image.h + base.y, c.image.h + c.y);
+        int r = std::min(base.image.w + base.x, c.image.w + c.x);
+        int b = std::min(base.image.h + base.y, c.image.h + c.y);
 
-        int t = MAX(base.y, c.y);
-        int l = MAX(base.x, c.x);
+        int t = std::max(base.y, c.y);
+        int l = std::max(base.x, c.x);
 
         int tw = r - l;
         int th = b - t;
 
-        ImageData destRC = asImage(&base.image)->getRect(l - base.x, t - base.y, tw, th);
-        ImageData srcRC = asImage(&c.image)->getRect(l - c.x, t - c.y, tw, th);
+        auto destRC = asImage(&base.image)->getRect(l - base.x, t - base.y, tw, th);
+        auto srcRC = asImage(&c.image)->getRect(l - c.x, t - c.y, tw, th);
 
-        operations::op_blend_subtract op;
-        operations::applyOperation(op, srcRC, destRC);
+        fe::operations::op_blend_subtract op;
+        fe::operations::applyOperation(op, srcRC, destRC);
     }
-
 
     for (int i = 1; i < num; ++i)
     {
-        fe_im& c = res[i];
+        auto& c = res[i];
         fe_image_free(&c.image);
     }
 
     return base;
 }
 
-
-
-class PixelDist_Light
+class PixelDist_Light : public fe::PixelBase
 {
 public:
     fe_apply_grad grad;
@@ -1029,32 +981,32 @@ public:
     float radOuter;
     float radInner;
 
-    PixelDist_Light(const fe_apply_grad& Grad, float S/*, float Outer, float Inner*/) : grad(Grad), s(S)
+    PixelDist_Light(const fe_apply_grad& Grad, float S /*, float Outer, float Inner*/)
+        : grad(Grad)
+        , s(S)
     {
     }
 
     ~PixelDist_Light()
     {
-
     }
 
-    void getPixel(GET_PIXEL_ARGS) const
+    void getPixel(const uint8_t* data, fe::Pixel& p, int x, int y) const override
     {
         //const fe_image& image = grad.image;
 
         const PixDist* pp = (PixDist*)data;
 
-
+#if 0
         float dist = pp->d1 + radOuter;
-        /*
         int gx = int(dist);
         if (gx >= image.w)
             gx = image.w - 1;
         if (gx < 0)
             gx = 0;
 
-        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, OPERATOR_ARGS_PASS);
-        */
+        gp.getPixel(asImage(&image)->getPixelPtr(gx, 0), g, x, y);
+#endif
 
         float dx = (float)(pp->x - x);
         float dy = (float)(pp->y - y);
@@ -1081,15 +1033,16 @@ public:
         p.b = int(c * 255);
 
         if (pp->d1 == 0.0f)
-            p.a = int( (1.0f - pp->d2) * 255.0f);
+            p.a = int((1.0f - pp->d2) * 255.0f);
         else if (pp->d1 > 0.0f)
             p.a = 255;
-        else p.a = 0;
+        else
+            p.a = 0;
     }
 
 private:
     PixelDist_Light(const PixelDist_Light&);
-    void operator = (const PixelDist_Light&);
+    void operator=(const PixelDist_Light&);
 };
 
 fe_im fe_node_light_get_image(const fe_node* node, const fe_args* args)
@@ -1102,7 +1055,6 @@ fe_im fe_node_light_get_image(const fe_node* node, const fe_args* args)
 
     fe_image_create(&dest.image, src.image.w, src.image.h, FE_IMG_R8G8B8A8);
 
-
     fe_apply_grad ag;
 
     //const float *props = node->properties_float;
@@ -1112,14 +1064,11 @@ fe_im fe_node_light_get_image(const fe_node* node, const fe_args* args)
 
     //create_grad(&ag, &node->grad, outer + inner);
 
-
-    operations::op_blit op;
-    PixelR8G8B8A8 destPixel;
-
+    fe::operations::op_blit op;
+    fe::PixelR8G8B8A8 destPixel;
 
     PixelDist_Light srcPixelFill(ag, args->scale);
-    operations::applyOperationT(op, PremultPixel<PixelDist_Light>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
-
+    fe::operations::applyOperationT(op, PremultPixel<PixelDist_Light>(srcPixelFill), destPixel, *asImage(&src.image), *asImage(&dest.image));
 
     fe_image_free(&src.image);
     //fe_image_free(&ag.image);

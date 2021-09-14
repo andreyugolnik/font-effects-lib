@@ -1,6 +1,16 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #include "ImageDataOperations.h"
 //#include "math/Color.h"
-#include <string.h>
+#include <cstring>
 
 namespace fe
 {
@@ -16,14 +26,7 @@ namespace fe
             //OX_ASSERT(dest.pitch);
             FE_ASSERT(src.bytespp);
             FE_ASSERT(dest.bytespp);
-            if (dest.w != src.w ||
-                    dest.h != src.h ||
-                    !src.data ||
-                    !dest.data ||
-                    !src.pitch ||
-                    !dest.pitch ||
-                    !src.bytespp ||
-                    !dest.bytespp)
+            if (dest.w != src.w || dest.h != src.h || !src.data || !dest.data || !src.pitch || !dest.pitch || !src.bytespp || !dest.bytespp)
                 return false;
 
             return true;
@@ -42,8 +45,8 @@ namespace fe
                 memcpy(dest.data, src.data, bppPitch * src.h);
             else
             {
-                const unsigned char* srcLine = src.data;
-                unsigned char* destLine = dest.data;
+                const uint8_t* srcLine = src.data;
+                uint8_t* destLine = dest.data;
 
                 const int srch = src.h;
                 const int srcpitch = src.pitch;
@@ -70,8 +73,8 @@ namespace fe
                 memmove(dest.data, src.data, bppPitch * src.h);
             else
             {
-                const unsigned char* srcLine = src.data;
-                unsigned char* destLine = dest.data;
+                const uint8_t* srcLine = src.data;
+                uint8_t* destLine = dest.data;
 
                 const int srch = src.h;
                 const int srcpitch = src.pitch;
@@ -131,12 +134,10 @@ namespace fe
             if (!check(src, dest))
                 return;
 
-            const unsigned char* srcLine = src.data;
-            unsigned char* destLine = dest.data + dest.pitch * dest.h - dest.pitch;
+            const uint8_t* srcLine = src.data;
+            uint8_t* destLine = dest.data + dest.pitch * dest.h - dest.pitch;
 
             int bppPitch = src.w * src.bytespp;
-
-
 
             const int srch = src.h;
             const int srcpitch = src.pitch;
@@ -166,5 +167,6 @@ namespace fe
             applyOperation(fill, dest);
         }
 
-    }
-}
+    } // namespace operations
+
+} // namespace fe

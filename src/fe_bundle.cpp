@@ -1,51 +1,64 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #ifndef _CRT_SECURE_NO_WARNINGS
-#   define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include "fe/fe_bundle.h"
-#include "fe/fe_node.h"
+
 #include "fe/fe_effect.h"
+#include "fe/fe_node.h"
 #include "fe_parser.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <locale.h>
+#include <cassert>
+#include <clocale>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 //#include <windows.h>
 
-
-/*
+#if 0
 FILE *f = fopen("d:/log.txt", "w");
 
-#define LOGF(...) fprintf(f, __VA_ARGS__); fflush(f)
-#define LOG(d) fputs(d,f); fflush(f)
-*/
-
+#define LOGF(...)            \
+    fprintf(f, __VA_ARGS__); \
+    fflush(f)
+#define LOG(d)   \
+    fputs(d, f); \
+    fflush(f)
+#endif
 
 void* _fe_alloc(size_t size);
-void _fe_free(void *ptr);
+void _fe_free(void* ptr);
 
 template <size_t N>
-static void safe_strcpy(char(&dest)[N], const char* src)
+static void safe_strcpy(char (&dest)[N], const char* src)
 {
     for (int i = 0; i < N; ++i)
         dest[i] = src[i];
 }
 
-static void safe_strcpy(char *dest, int N, const char* src)
+static void safe_strcpy(char* dest, int N, const char* src)
 {
     for (int i = 0; i < N; ++i)
         dest[i] = src[i];
 }
-
 
 static void error()
 {
     assert(!"fe parse error");
 }
 
-#define CHECK_ERR() if (s.error) error()
-
+#define CHECK_ERR() \
+    if (s.error)    \
+        error()
 
 static void read_token_end_line(fe_state& s)
 {
@@ -157,11 +170,11 @@ static void read_fixed(fe_state& s, const char* str)
 static float read_float(fe_state& s)
 {
     read_token(s);
-    
-    struct lconv* lc = localeconv();
-    if (lc)
+
+    auto lc = localeconv();
+    if (lc != nullptr)
     {
-        char *c = s.token;
+        char* c = s.token;
         char dp = *lc->decimal_point;
         while (true)
         {
@@ -172,7 +185,7 @@ static float read_float(fe_state& s)
             if (p == '.')
                 *c = dp;
             ++c;
-        }        
+        }
     }
 
     float v = atof(s.token);
@@ -185,10 +198,14 @@ static int read_int(fe_state& s)
     return atoi(s.token);
 }
 
-#define READ_FLOAT(state) read_float(state); CHECK_ERR()
-#define READ_INT(state)   read_int(s); CHECK_ERR()
+#define READ_FLOAT(state) \
+    read_float(state);    \
+    CHECK_ERR()
+#define READ_INT(state) \
+    read_int(s);        \
+    CHECK_ERR()
 
-/*
+#if 0
 static void* read_token_check(fe_state& s, const char* str)
 {
     read_token(s);
@@ -199,11 +216,14 @@ static void* read_token_check(fe_state& s, const char* str)
 
     return 0;
 }
- */
+#endif
 
 static void parse_color(const char* str, fe_color* c)
 {
-    int r, g, b, a;
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int a = 0;
     sscanf(str, "%02x%02x%02x%02x", &r, &g, &b, &a);
 
     c->rgba.r = r;
@@ -212,14 +232,13 @@ static void parse_color(const char* str, fe_color* c)
     c->rgba.a = a;
 }
 
-static void parse_alpha(const char* str, unsigned char* c)
+static void parse_alpha(const char* str, uint8_t* c)
 {
-    int a;
+    int a = 0;
     sscanf(str, "%02x", &a);
 
     *c = a;
 }
-
 
 void fe_node_init(fe_node* node, int tp, get_node_image f);
 
@@ -230,10 +249,10 @@ fe_node* fe_load_node(fe_state& s)
 
     if (*s.token != '*')
         s.error = 1;
-    s.token++;//skip *
+    s.token++; //skip *
     CHECK_ERR();
 
-    fe_node nd;   
+    fe_node nd;
     fe_node_init(&nd, 0, 0);
 
     nd.type = atoi(s.token);
@@ -243,134 +262,129 @@ fe_node* fe_load_node(fe_state& s)
     nd.y = READ_INT(s);
     nd.vis_x = READ_INT(s);
     nd.vis_y = READ_INT(s);
-    
 
     for (int i = 0; i < FE_MAX_PROPS; ++i)
         nd.properties_float[i] = READ_FLOAT(s);
     for (int i = 0; i < FE_MAX_PROPS; ++i)
         nd.properties_int[i] = READ_INT(s);
-    
+
     read_token(s);
     CHECK_ERR();
 
     safe_strcpy(nd.name, s.token);
 
-
-    fe_node* node = 0;
+    fe_node* node = nullptr;
     switch (nd.type)
     {
-        case fe_node_type_source_image:
-            node = &fe_node_image_alloc()->base;
-            break;
+    case fe_node_type_source_image:
+        node = &fe_node_image_alloc()->base;
+        break;
 
-        case fe_node_type_image_fixed:
-            node = &fe_node_image_fixed_alloc()->base;
-            break;
+    case fe_node_type_image_fixed:
+        node = &fe_node_image_fixed_alloc()->base;
+        break;
 
-        case fe_node_type_fill:
+    case fe_node_type_fill: {
+        fe_node_fill* nf = fe_node_fill_alloc();
+
+        node = &nf->base;
+
+        s.data++;
+        s.size--; //  Igor: fix reading unallocated memory
+        fe_grad* grad = &nf->grad;
+
+        //read colors
+        int colors = READ_INT(s);
+        grad->colors_num = colors;
+        for (int i = 0; i < colors; ++i)
         {
-            fe_node_fill* nf = fe_node_fill_alloc();
+            read_token(s);
+            CHECK_ERR();
 
-            node = &nf->base;
+            fe_color* c = &grad->colors[i];
 
-            s.data++;
-            s.size--; //  Igor: fix reading unallocated memory
-            fe_grad* grad = &nf->grad;
+            parse_color(s.token, c);
 
-            //read colors
-            int colors = READ_INT(s);
-            grad->colors_num = colors;
-            for (int i = 0; i < colors; ++i)
-            {
-                read_token(s);
-                CHECK_ERR();
+            grad->colors_pos[i] = READ_FLOAT(s);
+        }
 
-                fe_color* c = &grad->colors[i];
-
-                parse_color(s.token, c);
-
-                grad->colors_pos[i] = READ_FLOAT(s);
-            }
-
-            //read alpha
-            int alpha_num = READ_INT(s);
-            grad->alpha_num = alpha_num;
-            for (int i = 0; i < alpha_num; ++i)
-            {
-                read_token(s);
-                CHECK_ERR();
-
-                unsigned char* c = &grad->alpha[i];
-
-                parse_alpha(s.token, c);
-
-                grad->alpha_pos[i] = READ_FLOAT(s);
-            }
-
-            fe_plane &plane = nf->plane;
-            plane.a = READ_FLOAT(s);
-            plane.b = READ_FLOAT(s);
-            plane.d = READ_FLOAT(s);
-            plane.scale = READ_FLOAT(s);
-
-        } break;
-
-        case fe_node_type_fill_radial:
+        //read alpha
+        int alpha_num = READ_INT(s);
+        grad->alpha_num = alpha_num;
+        for (int i = 0; i < alpha_num; ++i)
         {
-            fe_node_fill_radial* nf = fe_node_fill_radial_alloc();
+            read_token(s);
+            CHECK_ERR();
 
-            node = &nf->base;
+            uint8_t* c = &grad->alpha[i];
 
-            s.data++;
-            s.size--; //  Igor: fix reading unallocated memory
-            fe_grad* grad = &nf->grad;
+            parse_alpha(s.token, c);
 
-            //read colors
-            int colors = READ_INT(s);
-            grad->colors_num = colors;
-            for (int i = 0; i < colors; ++i)
-            {
-                read_token(s);
-                CHECK_ERR();
+            grad->alpha_pos[i] = READ_FLOAT(s);
+        }
 
-                fe_color* c = &grad->colors[i];
+        fe_plane& plane = nf->plane;
+        plane.a = READ_FLOAT(s);
+        plane.b = READ_FLOAT(s);
+        plane.d = READ_FLOAT(s);
+        plane.scale = READ_FLOAT(s);
+    }
+    break;
 
-                parse_color(s.token, c);
+    case fe_node_type_fill_radial: {
+        fe_node_fill_radial* nf = fe_node_fill_radial_alloc();
 
-                grad->colors_pos[i] = READ_FLOAT(s);
-            }
+        node = &nf->base;
 
-            //read alpha
-            int alpha_num = READ_INT(s);
-            grad->alpha_num = alpha_num;
-            for (int i = 0; i < alpha_num; ++i)
-            {
-                read_token(s);
-                CHECK_ERR();
+        s.data++;
+        s.size--; //  Igor: fix reading unallocated memory
+        fe_grad* grad = &nf->grad;
 
-                unsigned char* c = &grad->alpha[i];
-
-                parse_alpha(s.token, c);
-
-                grad->alpha_pos[i] = READ_FLOAT(s);
-            }
-
-        } break;
-
-        default:
+        //read colors
+        int colors = READ_INT(s);
+        grad->colors_num = colors;
+        for (int i = 0; i < colors; ++i)
         {
-            node = fe_node_alloc(nd.type);
-            break;
+            read_token(s);
+            CHECK_ERR();
+
+            fe_color* c = &grad->colors[i];
+
+            parse_color(s.token, c);
+
+            grad->colors_pos[i] = READ_FLOAT(s);
+        }
+
+        //read alpha
+        int alpha_num = READ_INT(s);
+        grad->alpha_num = alpha_num;
+        for (int i = 0; i < alpha_num; ++i)
+        {
+            read_token(s);
+            CHECK_ERR();
+
+            uint8_t* c = &grad->alpha[i];
+
+            parse_alpha(s.token, c);
+
+            grad->alpha_pos[i] = READ_FLOAT(s);
         }
     }
-        
+    break;
+
+    default: {
+        node = fe_node_alloc(nd.type);
+        break;
+    }
+    }
+
     nd.get_image = node->get_image;
     memcpy(node, &nd, sizeof(nd));
 
     return node;
 }
 
-static void next_line(fe_state &s)
+static void next_line(fe_state& s)
 {
     if (s.size <= 0)
     {
@@ -383,8 +397,6 @@ static void next_line(fe_state &s)
         s.size--;
         return;
     }
-
-
 
     if (*s.data == '\r')
     {
@@ -414,8 +426,8 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
     effect->path_back[0] = 0;
     effect->path_font[0] = 0;
     effect->distance = 1.0f;
-	effect->px = -999;
-	effect->py = -999;
+    effect->px = -999;
+    effect->py = -999;
 
     read_fixed(s, "#");
     CHECK_ERR();
@@ -429,7 +441,6 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
 
     effect->size = READ_INT(s);
 
-
     while (s.data[0] != '@')
     {
         read_token(s);
@@ -441,15 +452,14 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
             continue;
         }
 
+        if (!strcmp(s.token, "pos"))
+        {
+            effect->px = READ_INT(s);
+            effect->py = READ_INT(s);
+            continue;
+        }
 
-		if (!strcmp(s.token, "pos"))
-		{
-			effect->px = READ_INT(s);
-			effect->py = READ_INT(s);
-			continue;
-		}
-
-        char *param = 0;
+        char* param = nullptr;
         int len = 0;
         if (!strcmp(s.token, "font"))
         {
@@ -467,13 +477,11 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
             param = effect->text;
         }
 
-        
-
         read_token_end_line(s);
         CHECK_ERR();
         safe_strcpy(param, len, s.token);
     }
-    
+
     read_fixed(s, "@nodes");
     CHECK_ERR();
 
@@ -496,13 +504,12 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
 
     for (int i = 0; i < num; ++i)
     {
-        fe_node *node = fe_load_node(s);
+        fe_node* node = fe_load_node(s);
         node->effect = effect;
         node->index = i;
 
         effect->nodes[i] = node;
-        CHECK_ERR();      
-
+        CHECK_ERR();
 
         if (node->type == fe_node_type_out)
             effect->out_node = node;
@@ -514,7 +521,6 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
     next_line(s);
     CHECK_ERR();
 
-
     num = 0;
     p = s.data;
     for (int i = 0; i < s.size; ++i)
@@ -525,7 +531,6 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
             break;
         ++p;
     }
-
 
     fe_node* srcLast = effect->nodes[0];
     fe_node* destLast = effect->nodes[0];
@@ -557,22 +562,20 @@ void* fe_load_effect(fe_state& s, fe_effect* effect)
         _fe_node_connect(srcLast, destLast, dp);
     }
 
-
-
-    return 0;
+    return nullptr;
 }
 
 FONT_EFFECT_EXPORT
-fe_bundle*  fe_bundle_load(const void* data_, int size)
+fe_bundle* fe_bundle_load(const void* data_, int size)
 {
-    const unsigned char *data = (const unsigned char *)data_;
+    auto data = (const uint8_t*)data_;
     if (size < 4)
-        return 0;
+        return nullptr;
+
     if (!(data[0] == 'F' && data[1] == 'E' && data[2] == 'F'))
-        return 0;
+        return nullptr;
 
-
-    char* copy = (char*)_fe_alloc(size + 2);
+    auto copy = (char*)_fe_alloc(size + 2);
     *(copy + size) = 0;
     memcpy(copy, data, size);
 
@@ -588,7 +591,7 @@ fe_bundle*  fe_bundle_load(const void* data_, int size)
 
     read_token(s);
     if (strcmp(s.token, "FEF2"))
-        return 0;
+        return nullptr;
 
     char* p = s.data;
     int num_effects = 0;
@@ -604,7 +607,7 @@ fe_bundle*  fe_bundle_load(const void* data_, int size)
 
     //LOGF("num %d", num_effects);
 
-    fe_bundle* bundle = (fe_bundle*)_fe_alloc(sizeof(fe_bundle));
+    auto bundle = (fe_bundle*)_fe_alloc(sizeof(fe_bundle));
 
     //read_token(s);
     //CHECK_ERR();
@@ -623,8 +626,6 @@ fe_bundle*  fe_bundle_load(const void* data_, int size)
 
     return bundle;
 }
-
-
 
 void fe_effect_free(fe_effect*);
 
@@ -661,9 +662,10 @@ fe_effect* fe_bundle_get_effect_by_name(fe_bundle* bundle, const char* name)
     int num = bundle->num;
     for (int i = 0; i < num; ++i)
     {
-        fe_effect* ef = &bundle->effect[i];
+        auto ef = &bundle->effect[i];
         if (!strcmp(ef->id, name))
             return ef;
     }
-    return 0;
+
+    return nullptr;
 }

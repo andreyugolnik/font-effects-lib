@@ -1,28 +1,34 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
+#include "ImageDataOperations.h"
+#include "fe/fe_effect.h"
 #include "fe/fe_gradient.h"
-#include <stdio.h>
 #include "fe/fe_image.h"
 #include "fe/fe_node.h"
-#include <assert.h>
-#include <stdlib.h>
-#include "ImageDataOperations.h"
-#include <math.h>
 #include <algorithm>
-#include <float.h>
-#include <limits.h>
-#include <string.h>
-
-#include "fe/fe_effect.h"
-using namespace fe;
+#include <cassert>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 void* _fe_alloc(size_t size);
-void _fe_free(void *ptr);
+void _fe_free(void* ptr);
 
-ImageData* asImage(fe_image* im);
-const ImageData* asImage(const fe_image* im);
+fe::ImageData* asImage(fe_image* im);
+const fe::ImageData* asImage(const fe_image* im);
 
 fe_im get_mixed_image(const fe_node* node, const fe_args* args);
-
-
 
 fe_im fe_get_custom_image(const fe_node* node, const fe_args* args)
 {
@@ -46,36 +52,33 @@ fe_im fe_get_custom_image(const fe_node* node, const fe_args* args)
 
     fe_image src = mixed.image;
 
-
     float f = 1.44f / 4;
     float z = 0.8f / 4;
     for (int y = 0; y < h; ++y)
     {
         for (int x = 0; x < w; ++x)
         {
-            unsigned char a = 255 - src.data[x * src.bytespp + y * src.pitch + off];
+            uint8_t a = 255 - src.data[x * src.bytespp + y * src.pitch + off];
             int v = a * 255;
 
-            int qx = x;// +1;
-            int qy = y;// +1;
+            int qx = x; // +1;
+            int qy = y; // +1;
 
-            
-            data[qy * nw + qx    ] += static_cast<int>(v * f);
+            data[qy * nw + qx] += static_cast<int>(v * f);
             data[qy * nw + qx + 1] += static_cast<int>(v * z);
             data[qy * nw + qx + 2] += static_cast<int>(v * f);
 
             qy += 1;
-            data[qy * nw + qx    ] += static_cast<int>(v * z);
+            data[qy * nw + qx] += static_cast<int>(v * z);
             data[qy * nw + qx + 1] += static_cast<int>(v * z);
             data[qy * nw + qx + 2] += static_cast<int>(v * z);
 
             qy += 1;
-            data[qy * nw + qx    ] += static_cast<int>(v * f);
+            data[qy * nw + qx] += static_cast<int>(v * f);
             data[qy * nw + qx + 1] += static_cast<int>(v * z);
             data[qy * nw + qx + 2] += static_cast<int>(v * f);
         }
     }
-
 
     fe_image res;
     fe_image_create(&res, nw, nh, FE_IMG_A8);
@@ -89,7 +92,7 @@ fe_im fe_get_custom_image(const fe_node* node, const fe_args* args)
             if (v > 255)
                 v = 255;
 
-            unsigned char& a = res.data[x + res.pitch * y];
+            uint8_t& a = res.data[x + res.pitch * y];
             int tx = x - 1;
             int ty = y - 1;
             if (tx >= w)
@@ -100,7 +103,7 @@ fe_im fe_get_custom_image(const fe_node* node, const fe_args* args)
                 tx = 0;
             if (ty < 0)
                 ty = 0;
-            unsigned char oa = src.data[tx * src.bytespp + ty * src.pitch + off];
+            uint8_t oa = src.data[tx * src.bytespp + ty * src.pitch + off];
             a = (v * oa) / 255;
         }
     }
@@ -115,7 +118,8 @@ fe_im fe_get_custom_image(const fe_node* node, const fe_args* args)
     return im;
 }
 
-/*
-fe_im fe_get_simple_image(const fe_node_custom *node, const fe_args *args)
-{}
-*/
+#if 0
+fe_im fe_get_simple_image(const fe_node_custom* node, const fe_args* args)
+{
+}
+#endif

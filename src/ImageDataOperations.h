@@ -1,7 +1,18 @@
+/**********************************************\
+*
+*  Font Effects library by
+*  Denis Muratshin / frankinshtein
+*
+*  Code cleanup by
+*  Andrey A. Ugolnik
+*
+\**********************************************/
+
 #pragma once
+
 #include "fe-include.h"
-#include <stdlib.h>
 #include <algorithm>
+#include <cstdlib>
 //#include "ImageData.h"
 
 namespace fe
@@ -25,43 +36,44 @@ namespace fe
 
         inline void blend_srcAlpha_invSrcAlpha(const Pixel& pS, Pixel& pD)
         {
-            const unsigned int& s = pS.rgba;
-            unsigned int& d = pD.rgba;
+            const uint32_t& s = pS.rgba;
+            uint32_t& d = pD.rgba;
 
-            unsigned int dst_rb = d        & 0xFF00FF;
-            unsigned int dst_ag = (d >> 8) & 0xFF00FF;
+            uint32_t dst_rb = d & 0xFF00FF;
+            uint32_t dst_ag = (d >> 8) & 0xFF00FF;
 
-            unsigned int src_rb = s        & 0xFF00FF;
-            unsigned int src_ag = (s >> 8) & 0xFF00FF;
+            uint32_t src_rb = s & 0xFF00FF;
+            uint32_t src_ag = (s >> 8) & 0xFF00FF;
 
-            unsigned int d_rb = src_rb - dst_rb;
-            unsigned int d_ag = src_ag - dst_ag;
+            uint32_t d_rb = src_rb - dst_rb;
+            uint32_t d_ag = src_ag - dst_ag;
 
             d_rb *= pS.a;
             d_ag *= pS.a;
             d_rb >>= 8;
             d_ag >>= 8;
 
-            const unsigned int rb  = (d_rb + dst_rb)        & 0x00FF00FF;
-            const unsigned int ag  = ((d_ag + dst_ag) << 8) & 0xFF00FF00;
+            const uint32_t rb = (d_rb + dst_rb) & 0x00FF00FF;
+            const uint32_t ag = ((d_ag + dst_ag) << 8) & 0xFF00FF00;
 
             d = rb | ag;
         }
 
-
-        template <class Op>
+        template<class Op>
         void applyOperation(const Op& op, const ImageData& src, const ImageData& dest);
-
 
         class op_fill
         {
         public:
-            op_fill() {color.rgba = 0xffffffff;}
+            op_fill()
+            {
+                color.rgba = 0xffffffff;
+            }
 
             Pixel color;
 
             template<class Src, class Dest>
-            void operator()(const Src& s, Dest& d, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& s, Dest& d, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 d.setPixel(destData, color);
             }
@@ -70,10 +82,13 @@ namespace fe
         class op_noise
         {
         public:
-            op_noise(int v): _v(v) {}
+            op_noise(int v)
+                : _v(v)
+            {
+            }
 
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel p;
 
@@ -85,7 +100,6 @@ namespace fe
                 //p.r = p.g = p.b = p.a = v > 600 ? 255:0;//for add
                 p.r = p.g = p.b = p.a = v > _v ? 255 : 0; //for alpha
 
-
                 destPixelFormat.setPixel(destData, p);
             }
 
@@ -96,13 +110,13 @@ namespace fe
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel p;
-                srcPixelFormat.getPixel(srcData, p, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, p, x, y);
 
                 //we need correct "snapped" to pixel format alpha
-                unsigned char na = destPixelFormat.snap_a(p.a);
+                uint8_t na = destPixelFormat.snap_a(p.a);
 
                 p.r = (p.r * na) / 255;
                 p.g = (p.g * na) / 255;
@@ -116,21 +130,20 @@ namespace fe
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel p;
-                srcPixelFormat.getPixel(srcData, p, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, p, x, y);
 
                 //we need correct "snapped" to pixel format alpha
-                unsigned char na = destPixelFormat.snap_a(p.a);
+                uint8_t na = destPixelFormat.snap_a(p.a);
 
                 if (na != 0)
-                { 
+                {
                     p.r = (p.r * 255) / na;
                     p.g = (p.g * 255) / na;
                     p.b = (p.b * 255) / na;
                 }
-                
 
                 destPixelFormat.setPixel(destData, p);
             }
@@ -140,10 +153,10 @@ namespace fe
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel p;
-                srcPixelFormat.getPixel(srcData, p, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, p, x, y);
                 destPixelFormat.setPixel(destData, p);
             }
         };
@@ -151,13 +164,16 @@ namespace fe
         class op_blit_colored
         {
         public:
-            op_blit_colored(const Pixel& clr): color(clr) {}
+            op_blit_colored(const Pixel& clr)
+                : color(clr)
+            {
+            }
 
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel src;
-                srcPixelFormat.getPixel(srcData, src, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, src, x, y);
 
                 Pixel dest;
                 dest.r = (src.r * color.r) / 255;
@@ -171,45 +187,49 @@ namespace fe
             Pixel color;
         };
 
-
-
         class op_blend_one_invSrcAlpha
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel s;
-                srcPixelFormat.getPixel(srcData, s, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, s, x, y);
 
                 Pixel d;
-                destPixelFormat.getPixel(destData, d, OPERATOR_ARGS_PASS);
+                destPixelFormat.getPixel(destData, d, x, y);
 
-#define M(v) v < 255 ? v : 255;
-                unsigned char ia = 255 - s.a;
+                uint8_t ia = 255 - s.a;
                 Pixel r;
                 r.r = M((d.r * ia) / 255 + s.r);
                 r.g = M((d.g * ia) / 255 + s.g);
                 r.b = M((d.b * ia) / 255 + s.b);
                 r.a = M((d.a * ia) / 255 + s.a);
-#undef  M
 
                 destPixelFormat.setPixel(destData, r);
             }
-        };
 
+        private:
+            template<typename  T>
+            T M(T v) const
+            {
+                return v < 255
+                    ? v
+                    : 255;
+            }
+        };
 
         class op_blend_srcAlpha_invSrcAlpha
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel pS;
-                srcPixelFormat.getPixel(srcData, pS, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, pS, x, y);
 
                 Pixel pD;
-                destPixelFormat.getPixel(destData, pD, OPERATOR_ARGS_PASS);
+                destPixelFormat.getPixel(destData, pD, x, y);
 
                 blend_srcAlpha_invSrcAlpha(pS, pD);
                 destPixelFormat.setPixel(destData, pD);
@@ -220,13 +240,13 @@ namespace fe
         {
         public:
             template<class Src, class Dest>
-            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const unsigned char* srcData, unsigned char* destData, OPERATOR_ARGS) const
+            void operator()(const Src& srcPixelFormat, Dest& destPixelFormat, const uint8_t* srcData, uint8_t* destData, int x, int y) const
             {
                 Pixel pS;
-                srcPixelFormat.getPixel(srcData, pS, OPERATOR_ARGS_PASS);
+                srcPixelFormat.getPixel(srcData, pS, x, y);
 
                 Pixel pD;
-                destPixelFormat.getPixel(destData, pD, OPERATOR_ARGS_PASS);
+                destPixelFormat.getPixel(destData, pD, x, y);
 
                 float k = pS.a / float(pD.a);
                 pD.r = std::max(0, int(pD.r - pD.r * k));
@@ -238,26 +258,24 @@ namespace fe
             }
         };
 
-
         bool check(const ImageData& src, const ImageData& dest);
 
-
-        template <class Op, class Src, class Dest>
+        template<class Op, class Src, class Dest>
         void applyOperationT(const Op& op, const Src& srcPixelFormat, Dest& destPixelFormat, const ImageData& src, const ImageData& dest)
         {
             if (!check(src, dest))
                 return;
 
-            const unsigned char* srcBuffer = (unsigned char*)src.data;
-            unsigned char* destBuffer = (unsigned char*)dest.data;
+            const uint8_t* srcBuffer = (uint8_t*)src.data;
+            uint8_t* destBuffer = (uint8_t*)dest.data;
 
             int w = dest.w;
             int h = dest.h;
 
             for (int y = 0; y != h; ++y)
             {
-                const unsigned char* srcLine = srcBuffer;
-                unsigned char* destLine = destBuffer;
+                const uint8_t* srcLine = srcBuffer;
+                uint8_t* destLine = destBuffer;
 
                 for (int x = 0; x != w; ++x)
                 {
@@ -272,21 +290,20 @@ namespace fe
             }
         }
 
-
-        template <class Op, class Dest>
+        template<class Op, class Dest>
         void applyOperationT(const Op& op, Dest& destPixelFormat, const ImageData& dest)
         {
             if (!check(dest, dest))
                 return;
 
-            unsigned char* destBuffer = (unsigned char*)dest.data;
+            uint8_t* destBuffer = (uint8_t*)dest.data;
 
             int w = dest.w;
             int h = dest.h;
 
             for (int y = 0; y != h; ++y)
             {
-                unsigned char* destLine = destBuffer;
+                uint8_t* destLine = destBuffer;
 
                 for (int x = 0; x != w; ++x)
                 {
@@ -298,11 +315,8 @@ namespace fe
             }
         }
 
-
-
-
         template<class T>
-        Pixel getPixel4x(const T& pf, const ImageData *src, int X, int Y)
+        Pixel getPixel4x(const T& pf, const ImageData* src, int X, int Y)
         {
             Pixel p0;
             Pixel p1;
@@ -333,11 +347,8 @@ namespace fe
             return r;
         }
 
-
-
-
-        template <class SrcPixel, class DestPixel>
-        void downsample(const SrcPixel &srcPixel, const DestPixel &destPixel, const ImageData *src, const ImageData *dest)
+        template<class SrcPixel, class DestPixel>
+        void downsample(const SrcPixel& srcPixel, const DestPixel& destPixel, const ImageData* src, const ImageData* dest)
         {
             int w = dest->w;
             int h = dest->h;
@@ -356,12 +367,12 @@ namespace fe
             }
         }
 
-#define FORMAT_OP1(format) case FE_IMG_##format: \
-        { \
-            Pixel##format d; \
-            applyOperationT(op, s, d, src, dest); \
-        } \
-        break;
+#define FORMAT_OP1(format)                    \
+    case FE_IMG_##format: {                   \
+        Pixel##format d;                      \
+        applyOperationT(op, s, d, src, dest); \
+    }                                         \
+    break;
 
         template<class Src, class Op>
         void SwitchSrcDestT(const Op& op, const Src& s, const ImageData& src, const ImageData& dest)
@@ -371,16 +382,14 @@ namespace fe
 #undef FORMAT_CASE
         }
 
+#define FORMAT_OP2(format)                \
+    case FE_IMG_##format: {               \
+        Pixel##format s;                  \
+        SwitchSrcDestT(op, s, src, dest); \
+    }                                     \
+    break;
 
-#define FORMAT_OP2(format) case FE_IMG_##format: \
-        { \
-            Pixel##format s; \
-            SwitchSrcDestT(op, s, src, dest); \
-        } \
-        break;
-
-
-        template <class Op>
+        template<class Op>
         void applyOperation(const Op& op, const ImageData& src, const ImageData& dest)
         {
 #define FORMAT_CASE FORMAT_OP2
@@ -388,20 +397,21 @@ namespace fe
 #undef FORMAT_CASE
         }
 
+#define FORMAT_OP3(format)            \
+    case FE_IMG_##format: {           \
+        Pixel##format d;              \
+        applyOperationT(op, d, dest); \
+    }                                 \
+    break;
 
-#define FORMAT_OP3(format) case FE_IMG_##format: \
-        { \
-            Pixel##format d; \
-            applyOperationT(op, d, dest); \
-        } \
-        break;
-
-        template <class Op>
+        template<class Op>
         void applyOperation(const Op& op, const ImageData& dest)
         {
 #define FORMAT_CASE FORMAT_OP3
             ALL_FORMATS_SWITCH(dest.format);
 #undef FORMAT_CASE
         }
-    }
-}
+
+    } // namespace operations
+
+} // namespace fe
